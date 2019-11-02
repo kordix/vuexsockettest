@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Socket.IO chat</title>
+</head>
+
+<body>
+<div id="app">
+    <p>kliknij plansze, zaznaczy się środkowe pole</p>
+    <div style="float:left;border:1px black solid;width:50px;height:50px" v-for="item in pola" @click="klikPole()"><span v-if="item.clicked">X</span> </div>
+    <div style="clear:both;margin-bottom:20px" ></div>
+    <button @click="incrementLiczba">Zwiększ liczbę</button>
+    {{liczba}}
+
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.21/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vuex/3.1.1/vuex.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        const store = new Vuex.Store({
+          state: {
+              daneall:{},
+              liczba:0,
+              pola:[
+                  {id:0,clicked:false},
+                  {id:1,clicked:false},
+                  {id:2,clicked:false},
+                  {id:3,clicked:false},
+                  {id:4,clicked:false},
+              ]
+          },
+          mutations: {
+            klikPole(state){
+                state.pola[2].clicked=true;
+            },
+            incrementLiczba(state){
+                state.liczba++;
+            }
+        },
+        actions:{
+            klikPole(context){
+                context.commit('klikPole');
+                //jak tu użyję socket.emit('serverdispatcher','klikPole'); to się zapętli
+            },
+            incrementLiczba(context){
+                context.commit('incrementLiczba');
+
+            }
+        }
+        })
+
+
+    let app = new Vue({
+        el:'#app',
+        store,
+        methods:{
+            klikPole(){
+                this.$store.dispatch('klikPole');
+                 socket.emit('serverdispatcher','klikPole'); //można by używać nazwy funkcji automatycznie https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name ale nie potrafię tego użyć tutaj
+
+            },
+            incrementLiczba(){
+                this.$store.dispatch('incrementLiczba');
+                socket.emit('serverdispatcher','incrementLiczba'); //musze zrobić broadcasting bo podwójnie się liczy
+
+            }
+        },
+        mounted(){
+            let self = this;
+            socket.on('serverdispatcher', function(action){ //jednym nasłuchiwczam ogrywamy różne akcje
+                console.log('odbiera u klienta');
+                self.$store.dispatch(action);
+            });
+        },
+        computed:{
+            pola(){
+                return this.$store.state.pola;
+            },
+            liczba(){
+                return this.$store.state.liczba;
+            }
+        }
+    })
+
+
+    </script>
+
+
+</body>
+
+</html>
